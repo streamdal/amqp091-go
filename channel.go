@@ -1401,23 +1401,6 @@ internal counter for DeliveryTags with the first confirmation starts at 1.
 Deprecated: Use PublishWithContext instead.
 */
 func (ch *Channel) Publish(exchange, key string, mandatory, immediate bool, msg Publishing) error {
-	// Begin streamdal shim
-	if ch.DataQual != nil {
-		data, err := ch.DataQual.ApplyRules(dataqual.Publish, fmt.Sprintf("%s|%s", exchange, key), msg.Body)
-		if err != nil {
-			log.Printf("Error applying data quality rules: %s", err)
-			return nil
-		}
-
-		if data == nil {
-			log.Println("Message dropped by data quality rules")
-			return nil
-		}
-
-		msg.Body = data
-	}
-	// End streamdal shim
-
 	_, err := ch.PublishWithDeferredConfirmWithContext(context.Background(), exchange, key, mandatory, immediate, msg)
 	return err
 }
@@ -1485,6 +1468,21 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 	if err := msg.Headers.Validate(); err != nil {
 		return nil, err
 	}
+
+	// Begin streamdal shim
+	if ch.DataQual != nil {
+		data, err := ch.DataQual.ApplyRules(dataqual.Publish, fmt.Sprintf("%s|%s", exchange, key), msg.Body)
+		if err != nil {
+			return nil, errors.New("error applying data quality rules: " + err.Error())
+		}
+
+		if data == nil {
+			return nil, errors.New("message dropped by data quality rules")
+		}
+
+		msg.Body = data
+	}
+	// End streamdal shim
 
 	ch.m.Lock()
 	defer ch.m.Unlock()
