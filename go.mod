@@ -1,5 +1,9 @@
-module github.com/rabbitmq/amqp091-go
+module github.com/streamdal/amqp091-go
 
 go 1.16
 
-require go.uber.org/goleak v1.2.1
+require (
+	github.com/rabbitmq/amqp091-go v1.8.1
+	github.com/streamdal/dataqual v0.0.12
+	go.uber.org/goleak v1.2.1
+)

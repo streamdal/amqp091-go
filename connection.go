@@ -7,6 +7,7 @@ package amqp091
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -20,6 +21,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/streamdal/dataqual"
 )
 
 const (
@@ -98,6 +101,8 @@ type Connection struct {
 	m          sync.Mutex // struct field mutex
 
 	conn io.ReadWriteCloser
+
+	DataQual *dataqual.DataQual
 
 	rpc       chan message
 	writer    *writer
@@ -256,6 +261,17 @@ a transport.  Use this method if you have established a TLS connection or wish
 to use your own custom transport.
 */
 func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
+	// Begin streamdal shim
+	// Expects PLUMBER_URL and PLUMBER_TOKEN env variables to be set. If not, dq will be nil.
+	dq, err := dataqual.New(&dataqual.Config{
+		Bus:         "rabbitmq",
+		ShutdownCtx: context.Background(),
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize Streamdal data quality library: %s", err))
+	}
+	// End streamdal shim
+
 	c := &Connection{
 		conn:      conn,
 		writer:    &writer{bufio.NewWriter(conn)},
@@ -264,6 +280,7 @@ func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
 		sends:     make(chan time.Time),
 		errors:    make(chan *Error, 1),
 		deadlines: make(chan readDeadliner, 1),
+		DataQual:  dq,
 	}
 	go c.reader(conn)
 	return c, c.open(config)

@@ -8,9 +8,13 @@ package amqp091
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
 	"reflect"
 	"sync"
 	"sync/atomic"
+
+	"github.com/streamdal/dataqual"
 )
 
 // 0      1         3             7                  size+7 size+8
@@ -33,6 +37,8 @@ type Channel struct {
 	notifyM    sync.RWMutex
 
 	connection *Connection
+
+	DataQual *dataqual.DataQual
 
 	rpc       chan message
 	consumers *consumers
@@ -86,6 +92,7 @@ func newChannel(c *Connection, id uint16) *Channel {
 		confirms:   newConfirms(),
 		recv:       (*Channel).recvMethod,
 		errors:     make(chan *Error, 1),
+		DataQual:   c.DataQual,
 	}
 }
 
@@ -1123,7 +1130,37 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 		return nil, err
 	}
 
-	return deliveries, nil
+	// Begin streamdal shim
+	if ch.DataQual == nil {
+		return deliveries, nil
+	}
+
+	// Begin streamdal shim
+	processed := make(chan Delivery)
+
+	go func() {
+		for {
+			select {
+			case msg := <-deliveries:
+
+				// TODO: do we just need queue name here?
+				data, err := ch.DataQual.ApplyRules(dataqual.Consume, fmt.Sprintf("%s|%s", queue, msg.RoutingKey), msg.Body)
+				if err != nil {
+					log.Printf("error applying data quality rules: %s", err)
+				}
+
+				if data == nil {
+					log.Printf("message dropped by data quality rules")
+				}
+
+				msg.Body = data
+				processed <- msg
+			}
+		}
+	}()
+
+	return processed, nil
+	// End streamdal shim
 }
 
 /*
@@ -1364,6 +1401,23 @@ internal counter for DeliveryTags with the first confirmation starts at 1.
 Deprecated: Use PublishWithContext instead.
 */
 func (ch *Channel) Publish(exchange, key string, mandatory, immediate bool, msg Publishing) error {
+	// Begin streamdal shim
+	if ch.DataQual != nil {
+		data, err := ch.DataQual.ApplyRules(dataqual.Publish, fmt.Sprintf("%s|%s", exchange, key), msg.Body)
+		if err != nil {
+			log.Printf("Error applying data quality rules: %s", err)
+			return nil
+		}
+
+		if data == nil {
+			log.Println("Message dropped by data quality rules")
+			return nil
+		}
+
+		msg.Body = data
+	}
+	// End streamdal shim
+
 	_, err := ch.PublishWithDeferredConfirmWithContext(context.Background(), exchange, key, mandatory, immediate, msg)
 	return err
 }
