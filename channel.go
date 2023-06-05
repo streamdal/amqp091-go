@@ -1144,13 +1144,14 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 			case msg := <-deliveries:
 
 				// TODO: do we just need queue name here?
-				data, err := ch.DataQual.ApplyRules(dataqual.Consume, fmt.Sprintf("%s|%s", queue, msg.RoutingKey), msg.Body)
+				data, err := ch.DataQual.ApplyRules(dataqual.Consume, queue, msg.Body)
 				if err != nil {
 					log.Printf("error applying data quality rules: %s", err)
 				}
 
 				if data == nil {
 					log.Printf("message dropped by data quality rules")
+					continue
 				}
 
 				msg.Body = data
