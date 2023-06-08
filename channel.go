@@ -1144,7 +1144,7 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 			case msg := <-deliveries:
 
 				// TODO: do we just need queue name here?
-				data, err := ch.DataQual.ApplyRules(dataqual.Consume, queue, msg.Body)
+				data, err := ch.DataQual.ApplyRules(context.Background(), dataqual.Consume, queue, msg.Body)
 				if err != nil {
 					log.Printf("error applying data quality rules: %s", err)
 				}
@@ -1472,7 +1472,7 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 
 	// Begin streamdal shim
 	if ch.DataQual != nil {
-		data, err := ch.DataQual.ApplyRules(dataqual.Publish, fmt.Sprintf("%s|%s", exchange, key), msg.Body)
+		data, err := ch.DataQual.ApplyRules(ctx, dataqual.Publish, fmt.Sprintf("%s|%s", exchange, key), msg.Body)
 		if err != nil {
 			return nil, errors.New("error applying data quality rules: " + err.Error())
 		}
