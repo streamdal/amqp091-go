@@ -68,8 +68,8 @@ github.com/rabbitmq/amqp091-go v1.8.1 h1:RejT1SBUim5doqcL6s7iN6SBmsQqyTgXb1xMlH0
 github.com/rabbitmq/amqp091-go v1.8.1/go.mod h1:+jPrT9iY2eLjRaMSRHUhc3z14E/l85kv/f+6luSD3pc=
 github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6LYCDYWNEvQ=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
-github.com/streamdal/dataqual v0.0.17 h1:hwLBt6eqn7AvTuN/UG/NHfDLZPr+c6MrZEbVjOZUNto=
-github.com/streamdal/dataqual v0.0.17/go.mod h1:jBJK4ykbCkmyt0ZJKcSJPJSHNQ7fyq6Lgo4kym10M/U=
+github.com/streamdal/dataqual v0.0.18 h1:tP5oouWxv8rpdgzc7MMRK2K5cak8uDCJoFfADndHbKc=
+github.com/streamdal/dataqual v0.0.18/go.mod h1:jBJK4ykbCkmyt0ZJKcSJPJSHNQ7fyq6Lgo4kym10M/U=
 github.com/streamdal/pii v0.0.4-0.20230607185452-2896fc3a28a4 h1:dyhUHNJ9sApY4ND3UAyjyeZXwa3WiFyNUDME1CfUe6I=
 github.com/streamdal/pii v0.0.4-0.20230607185452-2896fc3a28a4/go.mod h1:w9abah7PCw1Z2xQqvk0AVS48cbKTE3EpA39M0/P02uw=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

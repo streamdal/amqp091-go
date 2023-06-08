@@ -4,6 +4,6 @@ go 1.16
 
 require (
 	github.com/rabbitmq/amqp091-go v1.8.1
-	github.com/streamdal/dataqual v0.0.17
+	github.com/streamdal/dataqual v0.0.18
 	go.uber.org/goleak v1.2.1
 )

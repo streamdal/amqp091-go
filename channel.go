@@ -1478,7 +1478,7 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 		}
 
 		if data == nil {
-			return nil, errors.New("message dropped by data quality rules")
+			return nil, dataqual.ErrMessageDropped
 		}
 
 		msg.Body = data
