@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/streamdal/dataqual"
+	"github.com/streamdal/snitch-go-client"
 )
 
 const (
@@ -102,7 +102,7 @@ type Connection struct {
 
 	conn io.ReadWriteCloser
 
-	DataQual *dataqual.DataQual
+	Snitch *snitch.Snitch
 
 	rpc       chan message
 	writer    *writer
@@ -263,12 +263,12 @@ to use your own custom transport.
 func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
 	// Begin streamdal shim
 	// Expects PLUMBER_URL and PLUMBER_TOKEN env variables to be set. If not, dq will be nil.
-	dq, err := dataqual.New(&dataqual.Config{
-		Bus:         "rabbitmq",
+	dq, err := snitch.New(&snitch.Config{
+		DataSource:  "rabbitmq",
 		ShutdownCtx: context.Background(),
 	})
 	if err != nil {
-		panic(fmt.Sprintf("failed to initialize Streamdal data quality library: %s", err))
+		panic(fmt.Sprintf("failed to initialize Streamdal Snitch library: %s", err))
 	}
 	// End streamdal shim
 
@@ -280,7 +280,7 @@ func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
 		sends:     make(chan time.Time),
 		errors:    make(chan *Error, 1),
 		deadlines: make(chan readDeadliner, 1),
-		DataQual:  dq,
+		Snitch:    dq,
 	}
 	go c.reader(conn)
 	return c, c.open(config)

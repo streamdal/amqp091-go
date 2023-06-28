@@ -14,7 +14,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/streamdal/dataqual"
+	"github.com/streamdal/snitch-go-client"
 )
 
 // 0      1         3             7                  size+7 size+8
@@ -38,7 +38,7 @@ type Channel struct {
 
 	connection *Connection
 
-	DataQual *dataqual.DataQual
+	Snitch *snitch.Snitch
 
 	rpc       chan message
 	consumers *consumers
@@ -92,7 +92,7 @@ func newChannel(c *Connection, id uint16) *Channel {
 		confirms:   newConfirms(),
 		recv:       (*Channel).recvMethod,
 		errors:     make(chan *Error, 1),
-		DataQual:   c.DataQual,
+		Snitch:     c.Snitch,
 	}
 }
 
@@ -1131,7 +1131,7 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 	}
 
 	// Begin streamdal shim
-	if ch.DataQual == nil {
+	if ch.Snitch == nil {
 		return deliveries, nil
 	}
 
@@ -1144,13 +1144,13 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 			case msg := <-deliveries:
 
 				// TODO: do we just need queue name here?
-				data, err := ch.DataQual.ApplyRules(context.Background(), dataqual.Consume, queue, msg.Body)
+				data, err := ch.Snitch.ApplyRules(context.Background(), snitch.Consume, queue, msg.Body)
 				if err != nil {
-					log.Printf("error applying data quality rules: %s", err)
+					log.Printf("error applying Snitch rules: %s", err)
 				}
 
 				if data == nil {
-					log.Printf("message dropped by data quality rules")
+					log.Printf("message dropped by Snitch rules")
 					continue
 				}
 
@@ -1471,14 +1471,14 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 	}
 
 	// Begin streamdal shim
-	if ch.DataQual != nil {
-		data, err := ch.DataQual.ApplyRules(ctx, dataqual.Publish, fmt.Sprintf("%s|%s", exchange, key), msg.Body)
+	if ch.Snitch != nil {
+		data, err := ch.Snitch.ApplyRules(ctx, snitch.Publish, fmt.Sprintf("%s|%s", exchange, key), msg.Body)
 		if err != nil {
-			return nil, errors.New("error applying data quality rules: " + err.Error())
+			return nil, errors.New("error applying Snitch rules: " + err.Error())
 		}
 
 		if data == nil {
-			return nil, dataqual.ErrMessageDropped
+			return nil, snitch.ErrMessageDropped
 		}
 
 		msg.Body = data
