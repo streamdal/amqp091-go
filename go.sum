@@ -5,8 +5,8 @@ github.com/CosmWasm/tinyjson v0.9.0 h1:sPjgikATp5W0vD/v/Qz99uQ6G/lh/SuK0Wfskqua4
 github.com/CosmWasm/tinyjson v0.9.0/go.mod h1:5+7QnSKrkIWnpIdhUT2t2EYzXnII3/3MlM0oDsBSbc8=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
-github.com/batchcorp/plumber-schemas v0.0.183-0.20230628144351-f5dc66655fbd h1:9OYchWRCLraN3Rs99M/KOZW9XMXKrYznKowrEDepVQU=
-github.com/batchcorp/plumber-schemas v0.0.183-0.20230628144351-f5dc66655fbd/go.mod h1:eZZmP7+THPgMaPJ9Z06xMk+vG6wXAPXcjEL42EJc3yY=
+github.com/batchcorp/plumber-schemas v0.0.183-0.20230629182645-ba59891412a6 h1:MnC0HeEnPQ8NuJ0xICY4/VvC8tBGZukjNtWRpR2YYsI=
+github.com/batchcorp/plumber-schemas v0.0.183-0.20230629182645-ba59891412a6/go.mod h1:eZZmP7+THPgMaPJ9Z06xMk+vG6wXAPXcjEL42EJc3yY=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
@@ -82,8 +82,8 @@ github.com/smartystreets/goconvey v1.6.4/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/streamdal/pii v0.0.4-0.20230607185452-2896fc3a28a4 h1:dyhUHNJ9sApY4ND3UAyjyeZXwa3WiFyNUDME1CfUe6I=
 github.com/streamdal/pii v0.0.4-0.20230607185452-2896fc3a28a4/go.mod h1:w9abah7PCw1Z2xQqvk0AVS48cbKTE3EpA39M0/P02uw=
-github.com/streamdal/snitch-go-client v0.0.23 h1:HnzsaJCUfCYZCRbYMpScoXYs7Ti6+x51efhVHFp9aPA=
-github.com/streamdal/snitch-go-client v0.0.23/go.mod h1:mq6ebliZfRD1MW8xnv/m9J4LaavhKYfG1d/SyVijZQE=
+github.com/streamdal/snitch-go-client v0.0.27 h1:5zmHAS7qK+MsP6hHo6tC+ATLzbLZXuRWOja5REAv9QI=
+github.com/streamdal/snitch-go-client v0.0.27/go.mod h1:+26zTfLRgsIlCUCR1lbCUYJF+giAApqFyqdF2WWO4qc=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/testify v1.5.1/go.mod h1:5W2xD1RspED5o8YsWQXVCued0rvSQ+mT+I5cxcmMvtA=
