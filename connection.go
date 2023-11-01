@@ -125,7 +125,7 @@ type Connection struct {
 
 	closed int32 // Will be 1 if the connection is closed, 0 otherwise. Should only be accessed as atomic
 
-	Streamdal *streamdal.Streamdal
+	streamdal *streamdal.Streamdal // Streamdal addition
 }
 
 type readDeadliner interface {
@@ -268,7 +268,7 @@ func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
 		ClientType:  streamdal.ClientTypeSDK,
 	})
 	if err != nil {
-		panic(fmt.Sprintf("failed to initialize Streamdal go-sdk: %s", err))
+		panic(fmt.Sprintf("failed to initialize streamdal go-sdk: %s", err))
 	}
 	// End streamdal shim
 
@@ -280,7 +280,7 @@ func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
 		sends:     make(chan time.Time),
 		errors:    make(chan *Error, 1),
 		deadlines: make(chan readDeadliner, 1),
-		Streamdal: sd,
+		streamdal: sd, // Streamdal addition
 	}
 	go c.reader(conn)
 	return c, c.open(config)

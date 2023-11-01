@@ -79,7 +79,7 @@ type Channel struct {
 	header  *headerFrame
 	body    []byte
 
-	Streamdal *streamdal.Streamdal
+	streamdal *streamdal.Streamdal // Streamdal addition
 }
 
 // Constructs a new channel with the given framing rules
@@ -92,7 +92,7 @@ func newChannel(c *Connection, id uint16) *Channel {
 		confirms:   newConfirms(),
 		recv:       (*Channel).recvMethod,
 		errors:     make(chan *Error, 1),
-		Streamdal:  c.Streamdal,
+		streamdal:  c.streamdal,
 	}
 }
 
@@ -1131,9 +1131,10 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 	}
 
 	// Begin streamdal shim
-	if ch.Streamdal == nil {
+	if ch.streamdal == nil {
 		return deliveries, nil
 	}
+	// End streamdal shim
 
 	// Begin streamdal shim
 	processed := make(chan Delivery)
@@ -1143,18 +1144,19 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 			select {
 			case msg := <-deliveries:
 
-				resp, err := ch.Streamdal.Process(context.Background(), &streamdal.ProcessRequest{
+				// Begin Streamdal Shim
+				resp, err := ch.streamdal.Process(context.Background(), &streamdal.ProcessRequest{
 					ComponentName: "rabbitmq",
 					OperationType: streamdal.OperationTypeConsumer,
 					OperationName: fmt.Sprintf("%s-%s", queue, consumer),
 					Data:          msg.Body,
 				})
 				if err != nil {
-					log.Printf("error applying Streamdal rules: %s", err)
+					log.Printf("error applying streamdal rules: %s", err)
 				}
 
 				if resp.Data == nil {
-					log.Printf("message dropped by Streamdal rules")
+					log.Printf("message dropped by streamdal rules")
 					continue
 				}
 
@@ -1163,6 +1165,8 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 				}
 
 				msg.Body = resp.Data
+				// End streamdal shim
+
 				processed <- msg
 			}
 		}
@@ -1482,19 +1486,19 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 	defer ch.m.Unlock()
 
 	// Begin streamdal shim
-	if ch.Streamdal != nil {
-		resp, err := ch.Streamdal.Process(ctx, &streamdal.ProcessRequest{
+	if ch.streamdal != nil {
+		resp, err := ch.streamdal.Process(ctx, &streamdal.ProcessRequest{
 			ComponentName: "rabbitmq",
 			OperationType: streamdal.OperationTypeProducer,
 			OperationName: fmt.Sprintf("%s|%s", exchange, key),
 			Data:          msg.Body,
 		})
 		if err != nil {
-			return nil, errors.New("error applying Streamdal rules: " + err.Error())
+			return nil, errors.New("error applying streamdal rules: " + err.Error())
 		}
 
 		if resp.Data == nil {
-			return nil, errors.New("message dropped due to Streamdal rules")
+			return nil, errors.New("message dropped due to streamdal rules")
 		}
 
 		if resp.Error {
