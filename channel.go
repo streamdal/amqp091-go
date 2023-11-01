@@ -1143,11 +1143,10 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 			select {
 			case msg := <-deliveries:
 
-				// TODO: do we just need queue name here?
 				resp, err := ch.Streamdal.Process(context.Background(), &streamdal.ProcessRequest{
-					ComponentName: "",
+					ComponentName: "rabbitmq",
 					OperationType: streamdal.OperationTypeConsumer,
-					OperationName: "",
+					OperationName: fmt.Sprintf("%s-%s", queue, consumer),
 					Data:          msg.Body,
 				})
 				if err != nil {
