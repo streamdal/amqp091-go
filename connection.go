@@ -7,6 +7,7 @@ package amqp091
 
 import (
 	"bufio"
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -20,6 +21,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	streamdal "github.com/streamdal/go-sdk"
 )
 
 const (
@@ -121,6 +124,8 @@ type Connection struct {
 	Locales    []string // Server locales
 
 	closed int32 // Will be 1 if the connection is closed, 0 otherwise. Should only be accessed as atomic
+
+	Streamdal *streamdal.Streamdal
 }
 
 type readDeadliner interface {
@@ -256,6 +261,17 @@ a transport.  Use this method if you have established a TLS connection or wish
 to use your own custom transport.
 */
 func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
+	// Begin streamdal shim
+	// Expects STREAMDAL_URL and STREAMDAL_TOKEN env variables to be set. If not, sd will be nil.
+	sd, err := streamdal.New(&streamdal.Config{
+		ShutdownCtx: context.Background(),
+		ClientType:  streamdal.ClientTypeSDK,
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize Streamdal go-sdk: %s", err))
+	}
+	// End streamdal shim
+
 	c := &Connection{
 		conn:      conn,
 		writer:    &writer{bufio.NewWriter(conn)},
@@ -264,6 +280,7 @@ func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
 		sends:     make(chan time.Time),
 		errors:    make(chan *Error, 1),
 		deadlines: make(chan readDeadliner, 1),
+		Streamdal: sd,
 	}
 	go c.reader(conn)
 	return c, c.open(config)

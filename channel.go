@@ -8,9 +8,13 @@ package amqp091
 import (
 	"context"
 	"errors"
+	"fmt"
+	"log"
 	"reflect"
 	"sync"
 	"sync/atomic"
+
+	streamdal "github.com/streamdal/go-sdk"
 )
 
 // 0      1         3             7                  size+7 size+8
@@ -74,6 +78,8 @@ type Channel struct {
 	message messageWithContent
 	header  *headerFrame
 	body    []byte
+
+	Streamdal *streamdal.Streamdal
 }
 
 // Constructs a new channel with the given framing rules
@@ -86,6 +92,7 @@ func newChannel(c *Connection, id uint16) *Channel {
 		confirms:   newConfirms(),
 		recv:       (*Channel).recvMethod,
 		errors:     make(chan *Error, 1),
+		Streamdal:  c.Streamdal,
 	}
 }
 
@@ -1123,7 +1130,47 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 		return nil, err
 	}
 
-	return deliveries, nil
+	// Begin streamdal shim
+	if ch.Streamdal == nil {
+		return deliveries, nil
+	}
+
+	// Begin streamdal shim
+	processed := make(chan Delivery)
+
+	go func() {
+		for {
+			select {
+			case msg := <-deliveries:
+
+				// TODO: do we just need queue name here?
+				resp, err := ch.Streamdal.Process(context.Background(), &streamdal.ProcessRequest{
+					ComponentName: "",
+					OperationType: streamdal.OperationTypeConsumer,
+					OperationName: "",
+					Data:          msg.Body,
+				})
+				if err != nil {
+					log.Printf("error applying Streamdal rules: %s", err)
+				}
+
+				if resp.Data == nil {
+					log.Printf("message dropped by Streamdal rules")
+					continue
+				}
+
+				if resp.Error {
+					log.Printf("failed to run streamdal rule: %s", resp.Message)
+				}
+
+				msg.Body = resp.Data
+				processed <- msg
+			}
+		}
+	}()
+
+	return processed, nil
+	// End streamdal shim
 }
 
 /*
@@ -1434,6 +1481,30 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 
 	ch.m.Lock()
 	defer ch.m.Unlock()
+
+	// Begin streamdal shim
+	if ch.Streamdal != nil {
+		resp, err := ch.Streamdal.Process(ctx, &streamdal.ProcessRequest{
+			ComponentName: "rabbitmq",
+			OperationType: streamdal.OperationTypeProducer,
+			OperationName: fmt.Sprintf("%s|%s", exchange, key),
+			Data:          msg.Body,
+		})
+		if err != nil {
+			return nil, errors.New("error applying Streamdal rules: " + err.Error())
+		}
+
+		if resp.Data == nil {
+			return nil, errors.New("message dropped due to Streamdal rules")
+		}
+
+		if resp.Error {
+			return nil, fmt.Errorf("failed to run streamdal rule: %s", resp.Message)
+		}
+
+		msg.Body = resp.Data
+	}
+	// End streamdal shim
 
 	var dc *DeferredConfirmation
 	if ch.confirming {
