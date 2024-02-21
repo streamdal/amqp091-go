@@ -1143,9 +1143,7 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 	if ch.streamdal == nil {
 		return deliveries, nil
 	}
-	// End streamdal shim
 
-	// Begin streamdal shim
 	processed := make(chan Delivery)
 
 	go func() {
