@@ -532,10 +532,45 @@ func ExampleChannel_QueueDeclare_stream() {
 		false,             // noWait
 		amqp.Table{ // queue args
 			amqp.QueueTypeArg:                 amqp.QueueTypeStream,
-			amqp.StreamMaxLenBytesArg:         5_000_000_000, // 5 Gb
-			amqp.StreamMaxSegmentSizeBytesArg: 500_000_000,   // 500 Mb
-			amqp.StreamMaxAgeArg:              "3D",          // 3 days
+			amqp.StreamMaxLenBytesArg:         int64(5_000_000_000), // 5 Gb
+			amqp.StreamMaxSegmentSizeBytesArg: 500_000_000,          // 500 Mb
+			amqp.StreamMaxAgeArg:              "3D",                 // 3 days
 		},
 	)
 	log.Printf("Declared queue: %s", q.Name)
+}
+
+func ExampleChannel_QueueDeclare_classicQueueV2() {
+	conn, _ := amqp.Dial("amqp://localhost")
+	ch, _ := conn.Channel()
+	q, _ := ch.QueueDeclare(
+		"my-classic-queue-v2", // queue name
+		true,                  // durable
+		false,                 // auto-delete
+		false,                 // exclusive
+		false,                 // noWait
+		amqp.Table{
+			amqp.QueueTypeArg:    amqp.QueueTypeClassic,
+			amqp.QueueVersionArg: 2,
+		},
+	)
+	log.Printf("Declared Classic Queue v2: %s", q.Name)
+}
+
+func ExampleChannel_QueueDeclare_consumerTimeout() {
+	conn, _ := amqp.Dial("amqp://localhost")
+	ch, _ := conn.Channel()
+	// this works only with RabbitMQ 3.12+
+	q, _ := ch.QueueDeclare(
+		"my-classic-queue-v2", // queue name
+		true,                  // durable
+		false,                 // auto-delete
+		false,                 // exclusive
+		false,                 // noWait
+		amqp.Table{
+			amqp.QueueTypeArg:       amqp.QueueTypeQuorum, // also works with classic queues
+			amqp.ConsumerTimeoutArg: 600_000,              // 10 minute consumer timeout
+		},
+	)
+	log.Printf("Declared Classic Queue v2: %s", q.Name)
 }
