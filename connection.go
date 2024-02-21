@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	streamdal "github.com/streamdal/go-sdk"
+	streamdal "github.com/streamdal/streamdal/sdks/go"
 )
 
 const (

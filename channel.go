@@ -14,7 +14,7 @@ import (
 	"sync"
 	"sync/atomic"
 
-	streamdal "github.com/streamdal/go-sdk"
+	streamdal "github.com/streamdal/streamdal/sdks/go"
 )
 
 // 0      1         3             7                  size+7 size+8
@@ -1154,23 +1154,14 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 			case msg := <-deliveries:
 
 				// Begin Streamdal Shim
-				resp, err := ch.streamdal.Process(context.Background(), &streamdal.ProcessRequest{
+				resp := ch.streamdal.Process(context.Background(), &streamdal.ProcessRequest{
 					ComponentName: "rabbitmq",
 					OperationType: streamdal.OperationTypeConsumer,
 					OperationName: fmt.Sprintf("%s-%s", queue, consumer),
 					Data:          msg.Body,
 				})
-				if err != nil {
-					log.Printf("error applying streamdal rules: %s", err)
-				}
-
-				if resp.Data == nil {
-					log.Printf("message dropped by streamdal rules")
-					continue
-				}
-
-				if resp.Error {
-					log.Printf("failed to run streamdal rule: %s", resp.Message)
+				if resp.Status == streamdal.ExecStatusError {
+					log.Printf("error applying streamdal rules: %s", *resp.StatusMessage)
 				}
 
 				msg.Body = resp.Data
@@ -1611,22 +1602,14 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 
 	// Begin streamdal shim
 	if ch.streamdal != nil {
-		resp, err := ch.streamdal.Process(ctx, &streamdal.ProcessRequest{
+		resp := ch.streamdal.Process(ctx, &streamdal.ProcessRequest{
 			ComponentName: "rabbitmq",
 			OperationType: streamdal.OperationTypeProducer,
 			OperationName: fmt.Sprintf("%s|%s", exchange, key),
 			Data:          msg.Body,
 		})
-		if err != nil {
-			return nil, errors.New("error applying streamdal rules: " + err.Error())
-		}
-
-		if resp.Data == nil {
-			return nil, errors.New("message dropped due to streamdal rules")
-		}
-
-		if resp.Error {
-			return nil, fmt.Errorf("failed to run streamdal rule: %s", resp.Message)
+		if resp.Status == streamdal.ExecStatusError {
+			return nil, errors.New("error applying streamdal rules: " + *resp.StatusMessage)
 		}
 
 		msg.Body = resp.Data
