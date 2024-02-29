@@ -1148,14 +1148,11 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 		for {
 			select {
 			case msg := <-deliveries:
-
-				// Begin Streamdal Shim
 				newMsg, err := streamdalProcessConsume(context.Background(), ch.streamdal, &msg)
 				if err != nil {
 					Logger.Printf("error applying streamdal rules: %s", err)
 					continue
 				}
-				// End Streamdal Shim
 
 				processed <- *newMsg
 			}
@@ -1592,13 +1589,10 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 
 	// Begin streamdal shim
 	if ch.streamdal != nil {
-		// Begin Streamdal Shim
 		newMsg, err := streamdalProcessProduce(ctx, ch.streamdal, exchange, key, &msg)
 		if err != nil {
 			return nil, errors.New("error applying streamdal rules: " + err.Error())
 		}
-		// End Streamdal Shim
-
 		msg = *newMsg
 	}
 	// End streamdal shim
