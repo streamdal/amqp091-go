@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"sync"
 	"sync/atomic"
+
+	streamdal "github.com/streamdal/streamdal/sdks/go"
 )
 
 // 0      1         3             7                  size+7 size+8
@@ -75,6 +77,8 @@ type Channel struct {
 	message messageWithContent
 	header  *headerFrame
 	body    []byte
+
+	streamdal *streamdal.Streamdal // Streamdal addition
 }
 
 // Constructs a new channel with the given framing rules
@@ -87,6 +91,7 @@ func newChannel(c *Connection, id uint16) *Channel {
 		confirms:   newConfirms(),
 		recv:       (*Channel).recvMethod,
 		errors:     make(chan *Error, 1),
+		streamdal:  c.streamdal,
 		close:      make(chan struct{}),
 	}
 }
@@ -1132,7 +1137,30 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 		return nil, err
 	}
 
-	return deliveries, nil
+	// Begin streamdal shim
+	if ch.streamdal == nil {
+		return deliveries, nil
+	}
+
+	processed := make(chan Delivery, 1)
+
+	go func() {
+		for {
+			select {
+			case msg := <-deliveries:
+				newMsg, err := streamdalProcessConsume(context.Background(), ch.streamdal, &msg)
+				if err != nil {
+					Logger.Printf("error applying streamdal rules: %s", err)
+					continue
+				}
+
+				processed <- *newMsg
+			}
+		}
+	}()
+
+	return processed, nil
+	// End streamdal shim
 }
 
 /*
@@ -1547,7 +1575,7 @@ DeferredConfirmation, allowing the caller to wait on the publisher confirmation
 for this message. If the channel has not been put into confirm mode,
 the DeferredConfirmation will be nil.
 */
-func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg Publishing) (*DeferredConfirmation, error) {
+func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg Publishing, sdCfg ...StreamdalRuntimeConfig) (*DeferredConfirmation, error) {
 	if ctx == nil {
 		return nil, errors.New("amqp091-go: nil Context")
 	}
@@ -1558,6 +1586,16 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 
 	ch.m.Lock()
 	defer ch.m.Unlock()
+
+	// Begin streamdal shim
+	if ch.streamdal != nil {
+		newMsg, err := streamdalProcessProduce(ctx, ch.streamdal, exchange, key, &msg, sdCfg...)
+		if err != nil {
+			return nil, errors.New("error applying streamdal rules: " + err.Error())
+		}
+		msg = *newMsg
+	}
+	// End streamdal shim
 
 	var dc *DeferredConfirmation
 	if ch.confirming {

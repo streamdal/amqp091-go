@@ -6,12 +6,13 @@ package main
 import (
 	"context"
 	"flag"
-	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	amqp "github.com/streamdal/rabbitmq-amqp091-go"
 )
 
 var (

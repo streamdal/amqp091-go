@@ -20,6 +20,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	streamdal "github.com/streamdal/streamdal/sdks/go"
 )
 
 const (
@@ -74,6 +76,8 @@ type Config struct {
 	// If Dial is nil, net.DialTimeout with a 30s connection and 30s deadline is
 	// used during TLS and AMQP handshaking.
 	Dial func(network, addr string) (net.Conn, error)
+
+	EnableStreamdal bool // Streamdal Addition
 }
 
 // NewConnectionProperties creates an amqp.Table to be used as amqp.Config.Properties.
@@ -123,6 +127,8 @@ type Connection struct {
 	Locales    []string // Server locales
 
 	closed int32 // Will be 1 if the connection is closed, 0 otherwise. Should only be accessed as atomic
+
+	streamdal *streamdal.Streamdal // Streamdal addition
 }
 
 type readDeadliner interface {
@@ -258,6 +264,7 @@ a transport.  Use this method if you have established a TLS connection or wish
 to use your own custom transport.
 */
 func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
+
 	c := &Connection{
 		conn:      conn,
 		writer:    &writer{bufio.NewWriter(conn)},
@@ -268,6 +275,18 @@ func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
 		close:     make(chan struct{}),
 		deadlines: make(chan readDeadliner, 1),
 	}
+
+	// Begin streamdal shim
+	if config.EnableStreamdal {
+		sd, err := streamdalSetup()
+		if err != nil {
+			panic(fmt.Sprintf("failed to initialize streamdal go-sdk: %s", err))
+		}
+
+		c.streamdal = sd
+	}
+	// End streamdal shim
+
 	go c.reader(conn)
 	return c, c.open(config)
 }
