@@ -18,14 +18,10 @@ const (
 )
 
 // StreamdalRuntimeConfig is an optional configuration structure that can be
-// passed to kafka.FetchMessage() and kafka.WriteMessage() methods to influence
+// passed to channel.PublishWithDeferredConfirmWithContext() to influence
 // streamdal shim behavior.
-//
-// NOTE: This struct is intended to be passed as a value in a context.Context.
-// This is done this way to avoid having to change FetchMessage() and WriteMessages()
-// signatures.
 type StreamdalRuntimeConfig struct {
-	// StrictErrors will cause the shim to return a kafka.Error if Streamdal.Process()
+	// StrictErrors will cause the shim to return an error if Streamdal.Process()
 	// runs into an unrecoverable error. Default: swallow error and return original value.
 	StrictErrors bool
 
@@ -65,16 +61,16 @@ func streamdalSetup() (*streamdal.Streamdal, error) {
 	return sc, nil
 }
 
-func streamdalProcessConsume(ctx context.Context, sc *streamdal.Streamdal, msg *Delivery, loggers ...Logging) (*Delivery, error) {
+func streamdalProcessConsume(ctx context.Context, sc *streamdal.Streamdal, msg *Delivery, sdCfg ...StreamdalRuntimeConfig) (*Delivery, error) {
 	// Nothing to do if streamdal client is nil
 	if sc == nil {
 		return msg, nil
 	}
 
-	// Maybe extract runtime config from context
+	// Inject runtime config if provided
 	var src *StreamdalRuntimeConfig
-	if ctx != nil {
-		src = ctx.Value("streamdal-runtime-config").(*StreamdalRuntimeConfig)
+	if len(sdCfg) > 0 {
+		src = &sdCfg[0]
 	}
 
 	// Generate an audience from the provided parameters
@@ -95,7 +91,7 @@ func streamdalProcessConsume(ctx context.Context, sc *streamdal.Streamdal, msg *
 	case streamdal.ExecStatusError:
 		// Process() errored - return message as-is; if strict errors are NOT
 		// set, return error instead of message
-		streamdalLogError(loggers, "streamdal.Process() error: "+ptrStr(resp.StatusMessage))
+		Logger.Printf("streamdal.Process() error: %s", ptrStr(resp.StatusMessage))
 
 		if src != nil && src.StrictErrors {
 			return nil, errors.New("streamdal.Process() error: " + ptrStr(resp.StatusMessage))
@@ -105,16 +101,16 @@ func streamdalProcessConsume(ctx context.Context, sc *streamdal.Streamdal, msg *
 	return msg, nil
 }
 
-func streamdalProcessProduce(ctx context.Context, sc *streamdal.Streamdal, exchangeName, routingKey string, msg *Publishing, loggers ...Logging) (*Publishing, error) {
+func streamdalProcessProduce(ctx context.Context, sc *streamdal.Streamdal, exchangeName, routingKey string, msg *Publishing, sdCfg ...StreamdalRuntimeConfig) (*Publishing, error) {
 	// Nothing to do if streamdal client is nil
 	if sc == nil {
 		return msg, nil
 	}
 
-	// Maybe extract runtime config from context
+	// Inject runtime config if provided
 	var src *StreamdalRuntimeConfig
-	if ctx != nil {
-		src = ctx.Value("streamdal-runtime-config").(*StreamdalRuntimeConfig)
+	if len(sdCfg) > 0 {
+		src = &sdCfg[0]
 	}
 
 	// Generate an audience from the provided parameters
@@ -135,7 +131,7 @@ func streamdalProcessProduce(ctx context.Context, sc *streamdal.Streamdal, excha
 	case streamdal.ExecStatusError:
 		// Process() errored - return message as-is; if strict errors are NOT
 		// set, return error instead of message
-		streamdalLogError(loggers, "streamdal.Process() error: "+ptrStr(resp.StatusMessage))
+		Logger.Printf("streamdal.Process() error: %s", ptrStr(resp.StatusMessage))
 
 		if src != nil && src.StrictErrors {
 			return nil, errors.New("streamdal.Process() error: " + ptrStr(resp.StatusMessage))

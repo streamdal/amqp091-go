@@ -1142,7 +1142,7 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 		return deliveries, nil
 	}
 
-	processed := make(chan Delivery)
+	processed := make(chan Delivery, 1)
 
 	go func() {
 		for {
@@ -1575,7 +1575,7 @@ DeferredConfirmation, allowing the caller to wait on the publisher confirmation
 for this message. If the channel has not been put into confirm mode,
 the DeferredConfirmation will be nil.
 */
-func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg Publishing) (*DeferredConfirmation, error) {
+func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, exchange, key string, mandatory, immediate bool, msg Publishing, sdCfg ...StreamdalRuntimeConfig) (*DeferredConfirmation, error) {
 	if ctx == nil {
 		return nil, errors.New("amqp091-go: nil Context")
 	}
@@ -1589,7 +1589,7 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 
 	// Begin streamdal shim
 	if ch.streamdal != nil {
-		newMsg, err := streamdalProcessProduce(ctx, ch.streamdal, exchange, key, &msg)
+		newMsg, err := streamdalProcessProduce(ctx, ch.streamdal, exchange, key, &msg, sdCfg...)
 		if err != nil {
 			return nil, errors.New("error applying streamdal rules: " + err.Error())
 		}

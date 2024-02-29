@@ -76,6 +76,8 @@ type Config struct {
 	// If Dial is nil, net.DialTimeout with a 30s connection and 30s deadline is
 	// used during TLS and AMQP handshaking.
 	Dial func(network, addr string) (net.Conn, error)
+
+	EnableStreamdal bool // Streamdal Addition
 }
 
 // NewConnectionProperties creates an amqp.Table to be used as amqp.Config.Properties.
@@ -262,13 +264,6 @@ a transport.  Use this method if you have established a TLS connection or wish
 to use your own custom transport.
 */
 func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
-	// Begin streamdal shim
-	// Expects STREAMDAL_URL and STREAMDAL_TOKEN env variables to be set. If not, sd will be nil.
-	sd, err := streamdalSetup()
-	if err != nil {
-		panic(fmt.Sprintf("failed to initialize streamdal go-sdk: %s", err))
-	}
-	// End streamdal shim
 
 	c := &Connection{
 		conn:      conn,
@@ -279,8 +274,19 @@ func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
 		errors:    make(chan *Error, 1),
 		close:     make(chan struct{}),
 		deadlines: make(chan readDeadliner, 1),
-		streamdal: sd, // Streamdal addition
 	}
+
+	// Begin streamdal shim
+	if config.EnableStreamdal {
+		sd, err := streamdalSetup()
+		if err != nil {
+			panic(fmt.Sprintf("failed to initialize streamdal go-sdk: %s", err))
+		}
+
+		c.streamdal = sd
+	}
+	// End streamdal shim
+
 	go c.reader(conn)
 	return c, c.open(config)
 }
