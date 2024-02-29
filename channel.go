@@ -8,8 +8,6 @@ package amqp091
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -1152,20 +1150,14 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 			case msg := <-deliveries:
 
 				// Begin Streamdal Shim
-				resp := ch.streamdal.Process(context.Background(), &streamdal.ProcessRequest{
-					ComponentName: "rabbitmq",
-					OperationType: streamdal.OperationTypeConsumer,
-					OperationName: fmt.Sprintf("%s-%s", queue, consumer),
-					Data:          msg.Body,
-				})
-				if resp.Status == streamdal.ExecStatusError {
-					log.Printf("error applying streamdal rules: %s", *resp.StatusMessage)
+				newMsg, err := streamdalProcessConsume(context.Background(), ch.streamdal, &msg)
+				if err != nil {
+					Logger.Printf("error applying streamdal rules: %s", err)
+					continue
 				}
+				// End Streamdal Shim
 
-				msg.Body = resp.Data
-				// End streamdal shim
-
-				processed <- msg
+				processed <- *newMsg
 			}
 		}
 	}()
@@ -1600,17 +1592,14 @@ func (ch *Channel) PublishWithDeferredConfirmWithContext(ctx context.Context, ex
 
 	// Begin streamdal shim
 	if ch.streamdal != nil {
-		resp := ch.streamdal.Process(ctx, &streamdal.ProcessRequest{
-			ComponentName: "rabbitmq",
-			OperationType: streamdal.OperationTypeProducer,
-			OperationName: fmt.Sprintf("%s|%s", exchange, key),
-			Data:          msg.Body,
-		})
-		if resp.Status == streamdal.ExecStatusError {
-			return nil, errors.New("error applying streamdal rules: " + *resp.StatusMessage)
+		// Begin Streamdal Shim
+		newMsg, err := streamdalProcessProduce(ctx, ch.streamdal, exchange, key, &msg)
+		if err != nil {
+			return nil, errors.New("error applying streamdal rules: " + err.Error())
 		}
+		// End Streamdal Shim
 
-		msg.Body = resp.Data
+		msg = *newMsg
 	}
 	// End streamdal shim
 

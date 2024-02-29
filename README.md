@@ -1,5 +1,11 @@
 # Go RabbitMQ Client Library
 
+> [!IMPORTANT]
+> This library is instrumented with [Streamdal's Go SDK](https://github.com/streamdal/streamdal/tree/main/sdks/go).
+>
+> Refer to [README.STREAMDAL.md](README.STREAMDAL.md) for more information.
+
+
 [![amqp091-go](https://github.com/rabbitmq/amqp091-go/actions/workflows/tests.yml/badge.svg)](https://github.com/rabbitmq/amqp091-go/actions/workflows/tests.yml)
 [![Go Reference](https://pkg.go.dev/badge/github.com/rabbitmq/amqp091-go.svg)](https://pkg.go.dev/github.com/rabbitmq/amqp091-go)
 [![Go Report Card](https://goreportcard.com/badge/github.com/rabbitmq/amqp091-go)](https://goreportcard.com/report/github.com/rabbitmq/amqp091-go)

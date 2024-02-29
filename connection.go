@@ -7,7 +7,6 @@ package amqp091
 
 import (
 	"bufio"
-	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -265,10 +264,7 @@ to use your own custom transport.
 func Open(conn io.ReadWriteCloser, config Config) (*Connection, error) {
 	// Begin streamdal shim
 	// Expects STREAMDAL_URL and STREAMDAL_TOKEN env variables to be set. If not, sd will be nil.
-	sd, err := streamdal.New(&streamdal.Config{
-		ShutdownCtx: context.Background(),
-		ClientType:  streamdal.ClientTypeSDK,
-	})
+	sd, err := streamdalSetup()
 	if err != nil {
 		panic(fmt.Sprintf("failed to initialize streamdal go-sdk: %s", err))
 	}
