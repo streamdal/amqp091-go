@@ -63,6 +63,7 @@ func publish(ctx context.Context, publishOkCh <-chan struct{}, confirmsCh chan<-
 		Properties: amqp.NewConnectionProperties(),
 	}
 	config.Properties.SetClientConnectionName("producer-with-confirms")
+	config.EnableStreamdal = true // Streamdal addition
 
 	Log.Printf("producer: dialing %s", *uri)
 	conn, err := amqp.DialConfig(*uri, config)

@@ -14,7 +14,7 @@ const (
 	StreamdalEnvServiceName = "STREAMDAL_SERVICE_NAME"
 
 	StreamdalDefaultComponentName = "rabbitmq"
-	StreamdalDefaultOperationName = "unknown"
+	StreamdalDefaultOperationName = "consume"
 )
 
 // StreamdalRuntimeConfig is an optional configuration structure that can be
