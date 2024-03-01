@@ -1130,24 +1130,31 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 
 	deliveries := make(chan Delivery)
 
-	ch.consumers.add(consumer, deliveries)
-
-	if err := ch.call(req, res); err != nil {
-		ch.consumers.cancel(consumer)
-		return nil, err
-	}
-
 	// Begin streamdal shim
 	if ch.streamdal == nil {
+		ch.consumers.add(consumer, deliveries)
+
+		if err := ch.call(req, res); err != nil {
+			ch.consumers.cancel(consumer)
+			return nil, err
+		}
+
 		return deliveries, nil
 	}
 
-	processed := make(chan Delivery, 1)
+	processed := make(chan Delivery)
+
+	ch.consumers.add(consumer, deliveries)
 
 	go func() {
+		defer close(processed)
 		for {
 			select {
 			case msg := <-deliveries:
+				if msg.Body == nil {
+					break
+				}
+
 				newMsg, err := streamdalProcessConsume(context.Background(), ch.streamdal, &msg)
 				if err != nil {
 					Logger.Printf("error applying streamdal rules: %s", err)
@@ -1155,9 +1162,16 @@ func (ch *Channel) Consume(queue, consumer string, autoAck, exclusive, noLocal, 
 				}
 
 				processed <- *newMsg
+			case <-ch.consumers.closed:
+				return
 			}
 		}
 	}()
+
+	if err := ch.call(req, res); err != nil {
+		ch.consumers.cancel(consumer)
+		return nil, err
+	}
 
 	return processed, nil
 	// End streamdal shim

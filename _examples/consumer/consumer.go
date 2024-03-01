@@ -89,6 +89,7 @@ func NewConsumer(amqpURI, exchange, exchangeType, queueName, key, ctag string) (
 
 	config := amqp.Config{Properties: amqp.NewConnectionProperties()}
 	config.Properties.SetClientConnectionName("sample-consumer")
+	config.EnableStreamdal = true // Streamdal addition
 	Log.Printf("dialing %q", amqpURI)
 	c.conn, err = amqp.DialConfig(amqpURI, config)
 	if err != nil {

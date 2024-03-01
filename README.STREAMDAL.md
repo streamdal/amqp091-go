@@ -33,7 +33,16 @@ To run the example:
 1. Open a browser to verify you can see the streamdal UI at: `http://localhost:8080`
     - _It should look like this:_ ![streamdal-console-1](./assets/streamdal-console-1.png)
 
-1. Launch a consumer:
+1. Produce a message:
+
+    ```bash
+   STREAMDAL_ADDRESS=localhost:8082 \
+   STREAMDAL_AUTH_TOKEN=1234 \
+   STREAMDAL_SERVICE_NAME=billing-svc \
+   go run _examples/producer/producer.go -body '{"name": "Demo Person", "email": "demo.p@streamdal.com"}' -key "demo"
+    ```
+
+1. Run a consume operation:
 
    ```bash
    STREAMDAL_ADDRESS=localhost:8082 \
@@ -45,9 +54,9 @@ To run the example:
 1. Open the Streamdal Console in a browser [https://localhost:8080](https://localhost:8080)
     - _It should look like this:_ ![streamdal-console-2](./assets/streamdal-console-2.png)
 1. Create a pipeline that detects and masks PII fields & attach it to the consumer
-    - ![streamdal-console-3](./assets/streamdal-console-3.gif)
+    - ![streamdal-console-3](./assets/streamdal-console-3.png)
 
-1. In another terminal, run the producer:
+1. In another terminal, produce a message again:
 
     ```bash
    STREAMDAL_ADDRESS=localhost:8082 \
@@ -55,9 +64,12 @@ To run the example:
    STREAMDAL_SERVICE_NAME=billing-svc \
    go run _examples/producer/producer.go -body '{"name": "Demo Person", "email": "demo.p@streamdal.com"}' -key "demo"
     ```
-1. You should see a masked message in the consumer terminal: `{"name": "Demo Person", "email":"fde********"}`
-    - _**Tip**: If you detach the pipeline from the consumer and run the producer command again, you
-      will see the original, unmasked message._
+   
+1. Then run the consumer again, you should see a masked message in the consumer terminal:
+
+    ```bash
+   2024/03/01 10:13:05 [INFO] got 56B delivery: [1] "{\"name\": \"Demo Person\", \"email\": \"demo****************\"}"
+    ```
 
 ## Passing "runtime" settings to the shim
 
